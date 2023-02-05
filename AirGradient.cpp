@@ -22,10 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-// include this library's description file
 #include "AirGradient.h"
-
-// include description files for other libraries used (if any)
 #include "Arduino.h"
 #include <SoftwareSerial.h>
 #include <Wire.h>
@@ -399,6 +396,10 @@ void AirGradient::loop() {
 // END PMS FUNCTIONS //
 
 // START TMP_RH FUNCTIONS//
+
+TMP_RH_ErrorCode AirGradient::TMP_RH_Init() {
+    return TMP_RH_Init(0x44);
+}
 
 TMP_RH_ErrorCode AirGradient::TMP_RH_Init(uint8_t address) {
     if (_debugMsg) {
