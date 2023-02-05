@@ -130,6 +130,18 @@ int AirGradient::getPM10_Raw() {
     return (int)data.PM_AE_UG_10_0;
 }
 
+// Retrys to read atmospheric particle counts until success or maxRetrys (default 3).
+AE_Parts AirGradient::getAtmosphericParticles(int maxRetrys) {
+    AE_Parts result;
+    getAEParts(result);
+
+    for (; result.error != PMS_NO_ERROR && maxRetrys > 0; maxRetrys--) {
+        getAEParts(result);
+    }
+
+    return result;
+}
+
 int AirGradient::getPM0_3Count() {
     PMS_DATA data;
     requestRead();
@@ -260,15 +272,27 @@ bool AirGradient::read_PMS(PMS_DATA& data) {
     return _PMSstatus == STATUS_OK;
 }
 
+// Helper to get all AE values at once.
+void AirGradient::getAEParts(AE_Parts& result) {
+    PMS_DATA data;
+
+    requestRead();
+    if (!readUntil(data)) {
+        result.error = PMS_READ_FAILED;
+    } else {
+        result.PM1_0 = data.PM_AE_UG_1_0;
+        result.PM2_5 = data.PM_AE_UG_2_5;
+        result.PM10_0 = data.PM_AE_UG_10_0;
+    }
+}
+
 // Blocking function for parse response. Default timeout is 1s.
 bool AirGradient::readUntil(PMS_DATA& data, uint16_t timeout) {
     _data = &data;
     uint32_t start = millis();
     do {
         loop();
-        if (_PMSstatus == STATUS_OK)
-            break;
-    } while (millis() - start < timeout);
+    } while ((millis() - start < timeout) && (_PMSstatus != STATUS_OK));
 
     return _PMSstatus == STATUS_OK;
 }
@@ -660,47 +684,6 @@ void AirGradient::CO2_Init(int rx_pin, int tx_pin, int baudRate) {
         delay(10000);
     }
 }
-// const char* AirGradient::getCO2(int retryLimit) {
-//   int ctr = 0;
-//   int result_CO2 = getCO2_Raw();
-//   while(result_CO2 == -1){
-//     result_CO2 = getCO2_Raw();
-//     if((ctr == retryLimit) || (result_CO2 == -1)){
-//       Char_CO2[0] = 'N';
-//       Char_CO2[1] = 'U';
-//       Char_CO2[2] = 'L';
-//       Char_CO2[3] = 'L';
-//       return Char_CO2;
-//     }
-//     ctr++;
-//   }
-//   sprintf(Char_CO2,"%d", result_CO2);
-//   return Char_CO2;
-// }
-
-// int AirGradient::getCO2_Raw(){
-//   const byte CO2Command[] = {0xFE, 0X44, 0X00, 0X08, 0X02, 0X9F, 0X25};
-//   byte CO2Response[] = {0,0,0,0,0,0,0};
-//
-//   _SoftSerial_CO2->write(CO2Command, 7);
-//   delay(100);  //give the sensor a bit of time to respond
-//
-//   if (_SoftSerial_CO2->available()){
-//     for (int i=0; i < 7; i++) {
-//       int byte = _SoftSerial_CO2->read();
-//       CO2Response[i] = byte;
-//       if (CO2Response[0] != 254) {
-//         return -1;  //error code for debugging
-//       }
-//     }
-//     unsigned long val = CO2Response[3]*256 + CO2Response[4];
-//     return val;
-//   }
-//   else
-//   {
-//   return -2; //error code for debugging
-//   }
-// }
 
 int AirGradient::getCO2(int numberOfSamplesToTake) {
     int successfulSamplesCounter = 0;

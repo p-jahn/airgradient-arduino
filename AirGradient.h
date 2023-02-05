@@ -159,6 +159,21 @@ struct TMP_RH {
 };
 // ENUMS AND STRUCTS FOR TMP_RH END
 
+// ENUMS STRUCTS FOR PMS START
+typedef enum {
+    PMS_NO_ERROR = 0,
+    PMS_READ_FAILED = 1
+} PMS_ErrorCode;
+
+// Particle concentration (μg/m3) under atmospheric environment.
+struct AE_Parts {
+    uint16_t PM1_0;
+    uint16_t PM2_5;
+    uint16_t PM10_0;
+    PMS_ErrorCode error;
+};
+// ENUMS STRUCTS FOR PMS END
+
 // library interface description
 class AirGradient {
     // user-accessible "public" interface
@@ -175,6 +190,7 @@ class AirGradient {
     static const uint16_t SINGLE_RESPONSE_TIME = 1000;
     static const uint16_t TOTAL_RESPONSE_TIME = 1000 * 10;
     static const uint16_t STEADY_RESPONSE_TIME = 1000 * 30;
+    static const uint16_t DEFAULT_RETRY_COUNT = 3;
 
     static const uint16_t BAUD_RATE = 9600;
 
@@ -219,6 +235,8 @@ class AirGradient {
     int getPM2_Raw();
     int getPM1_Raw();
     int getPM10_Raw();
+
+    AE_Parts getAtmosphericParticles(int maxRetrys = DEFAULT_RETRY_COUNT);
 
     int getPM0_3Count();
     int getPM0_5Count();
@@ -295,6 +313,8 @@ class AirGradient {
     void loop();
     const char* _missingResult = "NULL";
     char Char_PM2[10];
+
+    void getAEParts(AE_Parts& result);
     // PMS VARIABLES PRIVATE END
 
     // TMP_RH VARIABLES PRIVATE START
@@ -315,11 +335,7 @@ class AirGradient {
     TMP_RH returnError(TMP_RH_ErrorCode command);
     // TMP_RH VARIABLES PRIVATE END
 
-    // CO2 VARABLES PUBLIC START
-    char Char_CO2[10];
-    // CO2 VARABLES PUBLIC END
-
-    // MHZ19 VARABLES PUBLIC START
+    // MHZ19 VARABLES PRIVATE START
     int readInternal_MHZ19();
 
     uint8_t _type_MHZ19, temperature_MHZ19;
@@ -328,7 +344,7 @@ class AirGradient {
     Stream* _serial_MHZ19;
     SoftwareSerial* _SoftSerial_MHZ19;
     uint8_t getCheckSum_MHZ19(unsigned char* packet);
-    // MHZ19 VARABLES PUBLIC END
+    // MHZ19 VARABLES PRIVATE END
 };
 
 #endif
