@@ -157,30 +157,14 @@ struct TMP_RH {
     char rh_char[10];
     TMP_RH_ErrorCode error;
 };
-
-struct TMP_RH_Char {
-    TMP_RH_ErrorCode error;
-};
 // ENUMS AND STRUCTS FOR TMP_RH END
-
-// ENUMS STRUCTS FOR CO2 START
-struct CO2_READ_RESULT {
-    int co2 = -1;
-    bool success = false;
-};
-// ENUMS STRUCTS FOR CO2 END
 
 // library interface description
 class AirGradient {
     // user-accessible "public" interface
   public:
     AirGradient(bool displayMsg = false, int baudRate = 9600);
-    // void begin(int baudRate=9600);
 
-    static void setOutput(Print& debugOut, bool verbose = true);
-
-    void beginCO2(void);
-    void beginCO2(int, int);
     void PMS_Init(void);
     void PMS_Init(int, int);
     void PMS_Init(int, int, int);
@@ -194,7 +178,7 @@ class AirGradient {
 
     static const uint16_t BAUD_RATE = 9600;
 
-    struct DATA {
+    struct PMS_DATA {
         // Standard Particles, CF=1
         uint16_t PM_SP_UG_1_0;
         uint16_t PM_SP_UG_2_5;
@@ -228,8 +212,8 @@ class AirGradient {
     void passiveMode();
 
     void requestRead();
-    bool read_PMS(DATA& data);
-    bool readUntil(DATA& data, uint16_t timeout = SINGLE_RESPONSE_TIME);
+    bool read_PMS(PMS_DATA& data);
+    bool readUntil(PMS_DATA& data, uint16_t timeout = SINGLE_RESPONSE_TIME);
 
     const char* getPM2();
     int getPM2_Raw();
@@ -245,7 +229,6 @@ class AirGradient {
 
     int getAMB_TMP();
     int getAMB_HUM();
-
     // PMS VARIABLES PUBLIC_END
 
     // TMP_RH VARIABLES PUBLIC START
@@ -262,7 +245,6 @@ class AirGradient {
     TMP_RH_ErrorCode periodicStart(TMP_RH_Repeatability repeatability, TMP_RH_Frequency frequency);
     TMP_RH periodicFetchData();
     TMP_RH_ErrorCode periodicStop();
-
     // TMP_RH VARIABLES PUBLIC END
 
     // CO2 VARIABLES PUBLIC START
@@ -272,7 +254,6 @@ class AirGradient {
     int getCO2(int numberOfSamplesToTake = 5);
     int getCO2_Raw();
     SoftwareSerial* _SoftSerial_CO2;
-
     // CO2 VARIABLES PUBLIC END
 
     // MHZ19 VARIABLES PUBLIC START
@@ -284,7 +265,6 @@ class AirGradient {
     bool isReady_MHZ19();
 
     int readMHZ19();
-
     // MHZ19 VARIABLES PUBLIC END
 
     // library-accessible "private" interface
@@ -303,7 +283,7 @@ class AirGradient {
 
     uint8_t _payload[32];
     Stream* _stream;
-    DATA* _data;
+    PMS_DATA* _data;
     STATUS _PMSstatus;
     MODE _mode = MODE_ACTIVE;
 
@@ -313,9 +293,8 @@ class AirGradient {
     uint16_t _calculatedChecksum;
     SoftwareSerial* _SoftSerial_PMS;
     void loop();
-    char Char_PM1[10];
+    const char* _missingResult = "NULL";
     char Char_PM2[10];
-    char Char_PM10[10];
     // PMS VARIABLES PRIVATE END
 
     // TMP_RH VARIABLES PRIVATE START
@@ -323,7 +302,6 @@ class AirGradient {
     TMP_RH_RegisterStatus _status;
 
     TMP_RH_ErrorCode writeCommand(TMP_RH_Commands command);
-    TMP_RH_ErrorCode writeAlertData(TMP_RH_Commands command, float temperature, float humidity);
 
     uint8_t checkCrc(uint8_t data[], uint8_t checksum);
     uint8_t calculateCrc(uint8_t data[]);
@@ -339,10 +317,9 @@ class AirGradient {
 
     // CO2 VARABLES PUBLIC START
     char Char_CO2[10];
-
     // CO2 VARABLES PUBLIC END
-    // MHZ19 VARABLES PUBLIC START
 
+    // MHZ19 VARABLES PUBLIC START
     int readInternal_MHZ19();
 
     uint8_t _type_MHZ19, temperature_MHZ19;
@@ -351,7 +328,6 @@ class AirGradient {
     Stream* _serial_MHZ19;
     SoftwareSerial* _SoftSerial_MHZ19;
     uint8_t getCheckSum_MHZ19(unsigned char* packet);
-
     // MHZ19 VARABLES PUBLIC END
 };
 

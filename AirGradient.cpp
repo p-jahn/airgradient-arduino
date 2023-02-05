@@ -93,130 +93,100 @@ void AirGradient::PMS_Init(int rx_pin, int tx_pin, int baudRate) {
 }
 
 const char* AirGradient::getPM2() {
-    if (getPM2_Raw()) {
-        int result_raw = getPM2_Raw();
-        sprintf(Char_PM2, "%d", result_raw);
-        return Char_PM2;
-    } else {
-        Char_PM2[0] = 'N';
-        Char_PM2[1] = 'U';
-        Char_PM2[2] = 'L';
-        Char_PM2[3] = 'L';
-        return Char_PM2;
-    }
-}
+    int result_raw = getPM2_Raw();
 
-int AirGradient::getPM2_Raw() {
-    int pm02;
-    DATA data;
-    requestRead();
-    if (readUntil(data)) {
-        pm02 = data.PM_AE_UG_2_5;
-        return pm02;
-    } else {
-        return -1;
+    if (result_raw < 0) {
+        return _missingResult;
     }
+
+    sprintf(Char_PM2, "%d", result_raw);
+    return Char_PM2;
 }
 
 int AirGradient::getPM1_Raw() {
-    int pm02;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        pm02 = data.PM_AE_UG_1_0;
-        return pm02;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_AE_UG_1_0;
+}
+
+int AirGradient::getPM2_Raw() {
+    PMS_DATA data;
+    requestRead();
+    if (!readUntil(data)) {
+        return -1;
+    }
+    return (int)data.PM_AE_UG_2_5;
 }
 
 int AirGradient::getPM10_Raw() {
-    int pm02;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        pm02 = data.PM_AE_UG_10_0;
-        return pm02;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_AE_UG_10_0;
 }
 
 int AirGradient::getPM0_3Count() {
-    int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        count = data.PM_RAW_0_3;
-        return count;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_RAW_0_3;
 }
 
 int AirGradient::getPM10_0Count() {
-    int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        count = data.PM_RAW_10_0;
-        return count;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_RAW_10_0;
 }
 
 int AirGradient::getPM5_0Count() {
-    int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        count = data.PM_RAW_5_0;
-        return count;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_RAW_5_0;
 }
 
 int AirGradient::getPM2_5Count() {
-    int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        count = data.PM_RAW_2_5;
-        return count;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_RAW_2_5;
 }
 
 int AirGradient::getPM1_0Count() {
-    int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        count = data.PM_RAW_1_0;
-        return count;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_RAW_1_0;
 }
 
 int AirGradient::getPM0_5Count() {
-    int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        count = data.PM_RAW_0_5;
-        return count;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_RAW_0_5;
 }
 
 int AirGradient::getAMB_TMP() {
     int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
     if (readUntil(data)) {
         count = data.PM_TMP;
@@ -228,7 +198,7 @@ int AirGradient::getAMB_TMP() {
 
 int AirGradient::getAMB_HUM() {
     int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
     if (readUntil(data)) {
         count = data.PM_HUM;
@@ -283,7 +253,7 @@ void AirGradient::requestRead() {
 }
 
 // Non-blocking function for parse response.
-bool AirGradient::read_PMS(DATA& data) {
+bool AirGradient::read_PMS(PMS_DATA& data) {
     _data = &data;
     loop();
 
@@ -291,7 +261,7 @@ bool AirGradient::read_PMS(DATA& data) {
 }
 
 // Blocking function for parse response. Default timeout is 1s.
-bool AirGradient::readUntil(DATA& data, uint16_t timeout) {
+bool AirGradient::readUntil(PMS_DATA& data, uint16_t timeout) {
     _data = &data;
     uint32_t start = millis();
     do {
