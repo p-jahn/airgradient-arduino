@@ -283,6 +283,7 @@ void AirGradient::getAEParts(AE_Parts& result) {
         result.PM1_0 = data.PM_AE_UG_1_0;
         result.PM2_5 = data.PM_AE_UG_2_5;
         result.PM10_0 = data.PM_AE_UG_10_0;
+        result.error = PMS_NO_ERROR;
     }
 }
 
