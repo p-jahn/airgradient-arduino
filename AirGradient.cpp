@@ -724,14 +724,15 @@ int AirGradient::getCO2_Raw() {
     while (_SoftSerial_CO2->available()) // flush whatever we might have
         _SoftSerial_CO2->read();
 
-    const byte CO2Command[] = {0xFE, 0X44, 0X00, 0X08, 0X02, 0X9F, 0X25};
+    const byte CO2Command[] = {0xFE, 0x04, 0x00, 0x03, 0x00, 0x01, 0xD5, 0xC5};
     byte CO2Response[] = {0, 0, 0, 0, 0, 0, 0};
 
     // tt
     int datapos = -1;
     //
 
-    const int commandSize = 7;
+    const int commandSize = 8;
+    const int responseSize = 7;
 
     int numberOfBytesWritten = _SoftSerial_CO2->write(CO2Command, commandSize);
 
@@ -742,7 +743,7 @@ int AirGradient::getCO2_Raw() {
 
     // attempt to read response
     int timeoutCounter = 0;
-    while (_SoftSerial_CO2->available() < commandSize) {
+    while (_SoftSerial_CO2->available() < responseSize) {
         timeoutCounter++;
         if (timeoutCounter > 10) {
             // timeout when reading response
@@ -752,7 +753,7 @@ int AirGradient::getCO2_Raw() {
     }
 
     // we have 7 bytes ready to be read
-    for (int i = 0; i < commandSize; i++) {
+    for (int i = 0; i < responseSize; i++) {
         CO2Response[i] = _SoftSerial_CO2->read();
 
         if ((CO2Response[i] == 0xFE) && (datapos == -1)) {

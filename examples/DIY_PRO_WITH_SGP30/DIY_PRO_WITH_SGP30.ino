@@ -25,7 +25,7 @@ If you have any questions please visit our forum at https://forum.airgradient.co
 If you are a school or university contact us for a free trial on the AirGradient platform.
 https://www.airgradient.com/
 
-MIT License
+CC BY-SA 4.0 Attribution-ShareAlike 4.0 International License
 
 */
 
@@ -91,7 +91,7 @@ int hum = 0;
 void setup()
 {
   Serial.begin(115200);
-
+  u8g2.setBusClock(100000);
   u8g2.begin();
   updateOLED();
 
