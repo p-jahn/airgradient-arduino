@@ -26,9 +26,9 @@ THE SOFTWARE.
 #ifndef AirGradient_h
 #define AirGradient_h
 
-#include <SoftwareSerial.h>
-#include <Print.h>
 #include "Stream.h"
+#include <Print.h>
+#include <SoftwareSerial.h>
 // MHZ19 CONSTANTS START
 //  types of sensors.
 extern const int MHZ14A;
@@ -42,8 +42,7 @@ extern const int STATUS_NOT_READY;
 // MHZ19 CONSTANTS END
 
 // ENUMS AND STRUCT FOR TMP_RH START
-typedef enum
-{
+typedef enum {
     SHT3XD_CMD_READ_SERIAL_NUMBER = 0x3780,
 
     SHT3XD_CMD_READ_STATUS = 0xF32D,
@@ -96,21 +95,18 @@ typedef enum
     SHT3XD_CMD_NO_SLEEP = 0x303E,
 } TMP_RH_Commands;
 
-typedef enum
-{
+typedef enum {
     SHT3XD_REPEATABILITY_HIGH,
     SHT3XD_REPEATABILITY_MEDIUM,
     SHT3XD_REPEATABILITY_LOW,
 } TMP_RH_Repeatability;
 
-typedef enum
-{
+typedef enum {
     SHT3XD_MODE_CLOCK_STRETCH,
     SHT3XD_MODE_POLLING,
 } TMP_RH_Mode;
 
-typedef enum
-{
+typedef enum {
     SHT3XD_FREQUENCY_HZ5,
     SHT3XD_FREQUENCY_1HZ,
     SHT3XD_FREQUENCY_2HZ,
@@ -118,8 +114,7 @@ typedef enum
     SHT3XD_FREQUENCY_10HZ
 } TMP_RH_Frequency;
 
-typedef enum
-{
+typedef enum {
     SHT3XD_NO_ERROR = 0,
 
     SHT3XD_CRC_ERROR = -101,
@@ -137,8 +132,7 @@ typedef enum
     SHT3XD_WIRE_I2C_UNKNOW_ERROR = -40
 } TMP_RH_ErrorCode;
 
-typedef union
-{
+typedef union {
     uint16_t rawData;
     struct
     {
@@ -156,40 +150,36 @@ typedef union
     };
 } TMP_RH_RegisterStatus;
 
-struct TMP_RH
-{
+struct TMP_RH {
     float t;
     int rh;
     char t_char[10];
     char rh_char[10];
     TMP_RH_ErrorCode error;
 };
-struct TMP_RH_Char
-{
-    TMP_RH_ErrorCode error;
-};
 // ENUMS AND STRUCTS FOR TMP_RH END
 
-// ENUMS STRUCTS FOR CO2 START
-struct CO2_READ_RESULT
-{
-    int co2 = -1;
-    bool success = false;
+// ENUMS STRUCTS FOR PMS START
+typedef enum {
+    PMS_NO_ERROR = 0,
+    PMS_READ_FAILED = 1
+} PMS_ErrorCode;
+
+// Particle concentration (μg/m3) under atmospheric environment.
+struct AE_Parts {
+    uint16_t PM1_0;
+    uint16_t PM2_5;
+    uint16_t PM10_0;
+    PMS_ErrorCode error;
 };
-// ENUMS STRUCTS FOR CO2 END
+// ENUMS STRUCTS FOR PMS END
 
 // library interface description
-class AirGradient
-{
+class AirGradient {
     // user-accessible "public" interface
-public:
+  public:
     AirGradient(bool displayMsg = false, int baudRate = 9600);
-    // void begin(int baudRate=9600);
 
-    static void setOutput(Print &debugOut, bool verbose = true);
-
-    void beginCO2(void);
-    void beginCO2(int, int);
     void PMS_Init(void);
     void PMS_Init(int, int);
     void PMS_Init(int, int, int);
@@ -200,11 +190,11 @@ public:
     static const uint16_t SINGLE_RESPONSE_TIME = 1000;
     static const uint16_t TOTAL_RESPONSE_TIME = 1000 * 10;
     static const uint16_t STEADY_RESPONSE_TIME = 1000 * 30;
+    static const uint16_t DEFAULT_RETRY_COUNT = 3;
 
     static const uint16_t BAUD_RATE = 9600;
 
-    struct DATA
-    {
+    struct PMS_DATA {
         // Standard Particles, CF=1
         uint16_t PM_SP_UG_1_0;
         uint16_t PM_SP_UG_2_5;
@@ -231,20 +221,22 @@ public:
         uint16_t PM_HUM;
     };
 
-    void PMS(Stream &);
+    void PMS(Stream&);
     void sleep();
     void wakeUp();
     void activeMode();
     void passiveMode();
 
     void requestRead();
-    bool read_PMS(DATA &data);
-    bool readUntil(DATA &data, uint16_t timeout = SINGLE_RESPONSE_TIME);
+    bool read_PMS(PMS_DATA& data);
+    bool readUntil(PMS_DATA& data, uint16_t timeout = SINGLE_RESPONSE_TIME);
 
-    const char *getPM2();
+    const char* getPM2();
     int getPM2_Raw();
     int getPM1_Raw();
     int getPM10_Raw();
+
+    AE_Parts getAtmosphericParticles(int maxRetrys = DEFAULT_RETRY_COUNT);
 
     int getPM0_3Count();
     int getPM0_5Count();
@@ -255,11 +247,10 @@ public:
 
     int getAMB_TMP();
     int getAMB_HUM();
-
     // PMS VARIABLES PUBLIC_END
 
     // TMP_RH VARIABLES PUBLIC START
-    void ClosedCube_TMP_RH();
+    TMP_RH_ErrorCode TMP_RH_Init();
     TMP_RH_ErrorCode TMP_RH_Init(uint8_t address);
     TMP_RH_ErrorCode clearAll();
 
@@ -272,7 +263,6 @@ public:
     TMP_RH_ErrorCode periodicStart(TMP_RH_Repeatability repeatability, TMP_RH_Frequency frequency);
     TMP_RH periodicFetchData();
     TMP_RH_ErrorCode periodicStop();
-
     // TMP_RH VARIABLES PUBLIC END
 
     // CO2 VARIABLES PUBLIC START
@@ -281,8 +271,7 @@ public:
     void CO2_Init(int, int, int);
     int getCO2(int numberOfSamplesToTake = 5);
     int getCO2_Raw();
-    SoftwareSerial *_SoftSerial_CO2;
-
+    SoftwareSerial* _SoftSerial_CO2;
     // CO2 VARIABLES PUBLIC END
 
     // MHZ19 VARIABLES PUBLIC START
@@ -294,28 +283,25 @@ public:
     bool isReady_MHZ19();
 
     int readMHZ19();
-
     // MHZ19 VARIABLES PUBLIC END
 
     // library-accessible "private" interface
-private:
+  private:
     int value;
 
     // PMS VARIABLES PRIVATE START
-    enum STATUS
-    {
+    enum STATUS {
         STATUS_WAITING,
         STATUS_OK
     };
-    enum MODE
-    {
+    enum MODE {
         MODE_ACTIVE,
         MODE_PASSIVE
     };
 
     uint8_t _payload[32];
-    Stream *_stream;
-    DATA *_data;
+    Stream* _stream;
+    PMS_DATA* _data;
     STATUS _PMSstatus;
     MODE _mode = MODE_ACTIVE;
 
@@ -323,11 +309,12 @@ private:
     uint16_t _frameLen;
     uint16_t _checksum;
     uint16_t _calculatedChecksum;
-    SoftwareSerial *_SoftSerial_PMS;
+    SoftwareSerial* _SoftSerial_PMS;
     void loop();
-    char Char_PM1[10];
+    const char* _missingResult = "NULL";
     char Char_PM2[10];
-    char Char_PM10[10];
+
+    void getAEParts(AE_Parts& result);
     // PMS VARIABLES PRIVATE END
 
     // TMP_RH VARIABLES PRIVATE START
@@ -335,7 +322,6 @@ private:
     TMP_RH_RegisterStatus _status;
 
     TMP_RH_ErrorCode writeCommand(TMP_RH_Commands command);
-    TMP_RH_ErrorCode writeAlertData(TMP_RH_Commands command, float temperature, float humidity);
 
     uint8_t checkCrc(uint8_t data[], uint8_t checksum);
     uint8_t calculateCrc(uint8_t data[]);
@@ -344,27 +330,21 @@ private:
     float calculateTemperature(uint16_t rawValue);
 
     TMP_RH readTemperatureAndHumidity();
-    TMP_RH_ErrorCode read_TMP_RH(uint16_t *data, uint8_t numOfPair);
+    TMP_RH_ErrorCode read_TMP_RH(uint16_t* data, uint8_t numOfPair);
 
     TMP_RH returnError(TMP_RH_ErrorCode command);
     // TMP_RH VARIABLES PRIVATE END
 
-    // CO2 VARABLES PUBLIC START
-    char Char_CO2[10];
-
-    // CO2 VARABLES PUBLIC END
-    // MHZ19 VARABLES PUBLIC START
-
+    // MHZ19 VARABLES PRIVATE START
     int readInternal_MHZ19();
 
     uint8_t _type_MHZ19, temperature_MHZ19;
     bool debug_MHZ19 = false;
 
-    Stream *_serial_MHZ19;
-    SoftwareSerial *_SoftSerial_MHZ19;
-    uint8_t getCheckSum_MHZ19(unsigned char *packet);
-
-    // MHZ19 VARABLES PUBLIC END
+    Stream* _serial_MHZ19;
+    SoftwareSerial* _SoftSerial_MHZ19;
+    uint8_t getCheckSum_MHZ19(unsigned char* packet);
+    // MHZ19 VARABLES PRIVATE END
 };
 
 #endif

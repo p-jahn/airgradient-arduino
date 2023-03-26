@@ -22,10 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-// include this library's description file
 #include "AirGradient.h"
-
-// include description files for other libraries used (if any)
 #include "Arduino.h"
 #include <SoftwareSerial.h>
 #include <Wire.h>
@@ -96,130 +93,112 @@ void AirGradient::PMS_Init(int rx_pin, int tx_pin, int baudRate) {
 }
 
 const char* AirGradient::getPM2() {
-    if (getPM2_Raw()) {
-        int result_raw = getPM2_Raw();
-        sprintf(Char_PM2, "%d", result_raw);
-        return Char_PM2;
-    } else {
-        Char_PM2[0] = 'N';
-        Char_PM2[1] = 'U';
-        Char_PM2[2] = 'L';
-        Char_PM2[3] = 'L';
-        return Char_PM2;
-    }
-}
+    int result_raw = getPM2_Raw();
 
-int AirGradient::getPM2_Raw() {
-    int pm02;
-    DATA data;
-    requestRead();
-    if (readUntil(data)) {
-        pm02 = data.PM_AE_UG_2_5;
-        return pm02;
-    } else {
-        return -1;
+    if (result_raw < 0 || result_raw > 1000000) {
+        return _missingResult;
     }
+
+    sprintf(Char_PM2, "%d", result_raw);
+    return Char_PM2;
 }
 
 int AirGradient::getPM1_Raw() {
-    int pm02;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        pm02 = data.PM_AE_UG_1_0;
-        return pm02;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_AE_UG_1_0;
+}
+
+int AirGradient::getPM2_Raw() {
+    PMS_DATA data;
+    requestRead();
+    if (!readUntil(data)) {
+        return -1;
+    }
+    return (int)data.PM_AE_UG_2_5;
 }
 
 int AirGradient::getPM10_Raw() {
-    int pm02;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        pm02 = data.PM_AE_UG_10_0;
-        return pm02;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_AE_UG_10_0;
+}
+
+// Retrys to read atmospheric particle counts until success or maxRetrys (default 3).
+AE_Parts AirGradient::getAtmosphericParticles(int maxRetrys) {
+    AE_Parts result;
+    getAEParts(result);
+
+    for (; result.error != PMS_NO_ERROR && maxRetrys > 0; maxRetrys--) {
+        getAEParts(result);
+    }
+
+    return result;
 }
 
 int AirGradient::getPM0_3Count() {
-    int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        count = data.PM_RAW_0_3;
-        return count;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_RAW_0_3;
 }
 
 int AirGradient::getPM10_0Count() {
-    int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        count = data.PM_RAW_10_0;
-        return count;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_RAW_10_0;
 }
 
 int AirGradient::getPM5_0Count() {
-    int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        count = data.PM_RAW_5_0;
-        return count;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_RAW_5_0;
 }
 
 int AirGradient::getPM2_5Count() {
-    int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        count = data.PM_RAW_2_5;
-        return count;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_RAW_2_5;
 }
 
 int AirGradient::getPM1_0Count() {
-    int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        count = data.PM_RAW_1_0;
-        return count;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_RAW_1_0;
 }
 
 int AirGradient::getPM0_5Count() {
-    int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
-    if (readUntil(data)) {
-        count = data.PM_RAW_0_5;
-        return count;
-    } else {
+    if (!readUntil(data)) {
         return -1;
     }
+    return (int)data.PM_RAW_0_5;
 }
 
 int AirGradient::getAMB_TMP() {
     int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
     if (readUntil(data)) {
         count = data.PM_TMP;
@@ -231,7 +210,7 @@ int AirGradient::getAMB_TMP() {
 
 int AirGradient::getAMB_HUM() {
     int count;
-    DATA data;
+    PMS_DATA data;
     requestRead();
     if (readUntil(data)) {
         count = data.PM_HUM;
@@ -286,22 +265,35 @@ void AirGradient::requestRead() {
 }
 
 // Non-blocking function for parse response.
-bool AirGradient::read_PMS(DATA& data) {
+bool AirGradient::read_PMS(PMS_DATA& data) {
     _data = &data;
     loop();
 
     return _PMSstatus == STATUS_OK;
 }
 
+// Helper to get all AE values at once.
+void AirGradient::getAEParts(AE_Parts& result) {
+    PMS_DATA data;
+
+    requestRead();
+    if (!readUntil(data)) {
+        result.error = PMS_READ_FAILED;
+    } else {
+        result.PM1_0 = data.PM_AE_UG_1_0;
+        result.PM2_5 = data.PM_AE_UG_2_5;
+        result.PM10_0 = data.PM_AE_UG_10_0;
+        result.error = PMS_NO_ERROR;
+    }
+}
+
 // Blocking function for parse response. Default timeout is 1s.
-bool AirGradient::readUntil(DATA& data, uint16_t timeout) {
+bool AirGradient::readUntil(PMS_DATA& data, uint16_t timeout) {
     _data = &data;
     uint32_t start = millis();
     do {
         loop();
-        if (_PMSstatus == STATUS_OK)
-            break;
-    } while (millis() - start < timeout);
+    } while ((millis() - start < timeout) && (_PMSstatus != STATUS_OK));
 
     return _PMSstatus == STATUS_OK;
 }
@@ -400,6 +392,10 @@ void AirGradient::loop() {
 
 // START TMP_RH FUNCTIONS//
 
+TMP_RH_ErrorCode AirGradient::TMP_RH_Init() {
+    return TMP_RH_Init(0x44);
+}
+
 TMP_RH_ErrorCode AirGradient::TMP_RH_Init(uint8_t address) {
     if (_debugMsg) {
         Serial.println("Initializing TMP_RH...");
@@ -420,8 +416,8 @@ TMP_RH AirGradient::periodicFetchData() //
     TMP_RH_ErrorCode error = writeCommand(SHT3XD_CMD_FETCH_DATA);
     if (error == SHT3XD_NO_ERROR) {
         result = readTemperatureAndHumidity();
-        sprintf(result.t_char, "%d", result.t);
-        sprintf(result.rh_char, "%f", result.rh);
+        sprintf(result.t_char, "%f", result.t);
+        sprintf(result.rh_char, "%d", result.rh);
 
         return result;
     } else
@@ -573,11 +569,9 @@ TMP_RH AirGradient::readTemperatureAndHumidity() //
     result.t = 0;
     result.rh = 0;
 
-    TMP_RH_ErrorCode error;
     uint16_t buf[2];
 
-    if (error == SHT3XD_NO_ERROR)
-        error = read_TMP_RH(buf, 2);
+    auto error = read_TMP_RH(buf, 2);
 
     if (error == SHT3XD_NO_ERROR) {
         result.t = calculateTemperature(buf[0]);
@@ -647,8 +641,8 @@ uint8_t AirGradient::calculateCrc(uint8_t data[]) {
 
 TMP_RH AirGradient::returnError(TMP_RH_ErrorCode error) {
     TMP_RH result;
-    result.t = NULL;
-    result.rh = NULL;
+    result.t = 0.0f;
+    result.rh = 0;
 
     result.t_char[0] = 'N';
     result.t_char[1] = 'U';
@@ -689,47 +683,6 @@ void AirGradient::CO2_Init(int rx_pin, int tx_pin, int baudRate) {
         delay(10000);
     }
 }
-// const char* AirGradient::getCO2(int retryLimit) {
-//   int ctr = 0;
-//   int result_CO2 = getCO2_Raw();
-//   while(result_CO2 == -1){
-//     result_CO2 = getCO2_Raw();
-//     if((ctr == retryLimit) || (result_CO2 == -1)){
-//       Char_CO2[0] = 'N';
-//       Char_CO2[1] = 'U';
-//       Char_CO2[2] = 'L';
-//       Char_CO2[3] = 'L';
-//       return Char_CO2;
-//     }
-//     ctr++;
-//   }
-//   sprintf(Char_CO2,"%d", result_CO2);
-//   return Char_CO2;
-// }
-
-// int AirGradient::getCO2_Raw(){
-//   const byte CO2Command[] = {0xFE, 0X44, 0X00, 0X08, 0X02, 0X9F, 0X25};
-//   byte CO2Response[] = {0,0,0,0,0,0,0};
-//
-//   _SoftSerial_CO2->write(CO2Command, 7);
-//   delay(100);  //give the sensor a bit of time to respond
-//
-//   if (_SoftSerial_CO2->available()){
-//     for (int i=0; i < 7; i++) {
-//       int byte = _SoftSerial_CO2->read();
-//       CO2Response[i] = byte;
-//       if (CO2Response[0] != 254) {
-//         return -1;  //error code for debugging
-//       }
-//     }
-//     unsigned long val = CO2Response[3]*256 + CO2Response[4];
-//     return val;
-//   }
-//   else
-//   {
-//   return -2; //error code for debugging
-//   }
-// }
 
 int AirGradient::getCO2(int numberOfSamplesToTake) {
     int successfulSamplesCounter = 0;
